@@ -1,0 +1,31 @@
+// use prisma-8
+model Order {
+  id        Int              @id @default(autoincrement())
+  orderNo   String           @unique
+  status    String
+  createdAt TimestamptzString @default(now())
+}
+
+model Inventory {
+  id           Int              @id @default(autoincrement())
+  sku          String
+  quantity     Int
+  reorderPoint Int
+  createdAt    TimestamptzString @default(now())
+}
+
+model Risk {
+  id        Int              @id @default(autoincrement())
+  title     String
+  severity  String
+  status    String
+  createdAt TimestamptzString @default(now())
+}
+
+model Incident {
+  id        Int              @id @default(autoincrement())
+  title     String
+  severity  String
+  status    String
+  createdAt TimestamptzString @default(now())
+}
