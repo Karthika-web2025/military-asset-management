@@ -31,20 +31,45 @@ function Dashboard() {
     loadDashboard();
   }, [appliedFilters]);
 
+  // Load Bases and Equipment Types from existing Assets API
   const loadFilterData = async () => {
     try {
-      const [baseResponse, equipmentResponse] = await Promise.all([
-        api.get("/assets/bases"),
-        api.get("/assets/equipment-types"),
-      ]);
+      const response = await api.get("/assets");
 
-      setBases(baseResponse.data.data || []);
-      setEquipmentTypes(equipmentResponse.data.data || []);
+      const assets = response.data.data || [];
+
+      const uniqueBases = [];
+      const uniqueEquipmentTypes = [];
+
+      assets.forEach((asset) => {
+        // Add unique base
+        if (
+          asset.base &&
+          !uniqueBases.some((base) => base.id === asset.base.id)
+        ) {
+          uniqueBases.push(asset.base);
+        }
+
+        // Add unique equipment type
+        if (
+          asset.equipmentType &&
+          !uniqueEquipmentTypes.some(
+            (equipmentType) =>
+              equipmentType.id === asset.equipmentType.id
+          )
+        ) {
+          uniqueEquipmentTypes.push(asset.equipmentType);
+        }
+      });
+
+      setBases(uniqueBases);
+      setEquipmentTypes(uniqueEquipmentTypes);
     } catch (error) {
       console.error("Failed to load filter data:", error);
     }
   };
 
+  // Load dashboard data
   const loadDashboard = async () => {
     try {
       const params = {};
@@ -62,7 +87,8 @@ function Dashboard() {
       }
 
       if (appliedFilters.equipmentTypeId) {
-        params.equipmentTypeId = appliedFilters.equipmentTypeId;
+        params.equipmentTypeId =
+          appliedFilters.equipmentTypeId;
       }
 
       const response = await api.get("/dashboard", {
@@ -75,6 +101,7 @@ function Dashboard() {
     }
   };
 
+  // Handle filter changes
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
 
@@ -84,10 +111,12 @@ function Dashboard() {
     }));
   };
 
+  // Apply filters
   const applyFilters = () => {
     setAppliedFilters(filters);
   };
 
+  // Reset filters
   const resetFilters = () => {
     const emptyFilters = {
       dateFrom: "",
@@ -100,13 +129,16 @@ function Dashboard() {
     setAppliedFilters(emptyFilters);
   };
 
+  // Loading state
   if (!dashboard) {
     return (
       <div className="app-layout">
         <Sidebar />
 
         <main className="main-content">
-          <div className="loading">Loading dashboard...</div>
+          <div className="loading">
+            Loading dashboard...
+          </div>
         </main>
       </div>
     );
@@ -136,10 +168,14 @@ function Dashboard() {
       <main className="main-content">
         <h1>Dashboard</h1>
 
-        {/* Filters */}
+        {/* =========================
+            Filters
+        ========================= */}
         <div className="dashboard-filters">
+          {/* Date From */}
           <div className="filter-group">
             <label>Date From</label>
+
             <input
               type="date"
               name="dateFrom"
@@ -148,8 +184,10 @@ function Dashboard() {
             />
           </div>
 
+          {/* Date To */}
           <div className="filter-group">
             <label>Date To</label>
+
             <input
               type="date"
               name="dateTo"
@@ -158,8 +196,10 @@ function Dashboard() {
             />
           </div>
 
+          {/* Base */}
           <div className="filter-group">
             <label>Base</label>
+
             <select
               name="baseId"
               value={filters.baseId}
@@ -168,21 +208,28 @@ function Dashboard() {
               <option value="">All Bases</option>
 
               {bases.map((base) => (
-                <option key={base.id} value={base.id}>
+                <option
+                  key={base.id}
+                  value={base.id}
+                >
                   {base.name}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Equipment Type */}
           <div className="filter-group">
             <label>Equipment Type</label>
+
             <select
               name="equipmentTypeId"
               value={filters.equipmentTypeId}
               onChange={handleFilterChange}
             >
-              <option value="">All Equipment Types</option>
+              <option value="">
+                All Equipment Types
+              </option>
 
               {equipmentTypes.map((equipmentType) => (
                 <option
@@ -195,6 +242,7 @@ function Dashboard() {
             </select>
           </div>
 
+          {/* Filter Buttons */}
           <div className="filter-buttons">
             <button onClick={applyFilters}>
               Apply Filters
@@ -209,15 +257,20 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Dashboard Cards */}
+        {/* =========================
+            Dashboard Cards
+        ========================= */}
         <div className="dashboard-grid">
           {cards.map(([title, value]) => {
-            const isNetMovement = title === "Net Movement";
+            const isNetMovement =
+              title === "Net Movement";
 
             return (
               <div
                 className={`dashboard-card ${
-                  isNetMovement ? "clickable-card" : ""
+                  isNetMovement
+                    ? "clickable-card"
+                    : ""
                 }`}
                 key={title}
                 onClick={() => {
@@ -227,26 +280,36 @@ function Dashboard() {
                 }}
               >
                 <h3>{title}</h3>
+
                 <strong>{value}</strong>
 
                 {isNetMovement && (
-                  <small>Click to view details</small>
+                  <small>
+                    Click to view details
+                  </small>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Net Movement Popup */}
+        {/* =========================
+            Net Movement Popup
+        ========================= */}
         {showMovementDetails && (
           <div
             className="modal-overlay"
-            onClick={() => setShowMovementDetails(false)}
+            onClick={() =>
+              setShowMovementDetails(false)
+            }
           >
             <div
               className="modal-content"
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
             >
+              {/* Modal Header */}
               <div className="modal-header">
                 <h2>Net Movement Details</h2>
 
@@ -260,116 +323,138 @@ function Dashboard() {
                 </button>
               </div>
 
-              {/* Purchases */}
+              {/* =========================
+                  Purchases
+              ========================= */}
               <div className="movement-section">
                 <h3>
                   Purchases: {dashboard.purchases}
                 </h3>
 
-                {movementDetails.purchases.length === 0 ? (
+                {movementDetails.purchases.length ===
+                0 ? (
                   <p>No purchases found.</p>
                 ) : (
                   <div className="movement-list">
-                    {movementDetails.purchases.map((item) => (
-                      <div
-                        className="movement-item"
-                        key={`purchase-${item.id}`}
-                      >
-                        <strong>
-                          {item.quantity} units
-                        </strong>
+                    {movementDetails.purchases.map(
+                      (item) => (
+                        <div
+                          className="movement-item"
+                          key={`purchase-${item.id}`}
+                        >
+                          <strong>
+                            {item.quantity} units
+                          </strong>
 
-                        <span>
-                          {item.equipmentType}
-                        </span>
+                          <span>
+                            {item.equipmentType}
+                          </span>
 
-                        <span>
-                          {item.base}
-                        </span>
+                          <span>
+                            {item.base}
+                          </span>
 
-                        <span>
-                          {new Date(
-                            item.purchaseDate
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
+                          <span>
+                            {new Date(
+                              item.purchaseDate
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Transfer In */}
+              {/* =========================
+                  Transfer In
+              ========================= */}
               <div className="movement-section">
                 <h3>
                   Transfer In: {dashboard.transferIn}
                 </h3>
 
-                {movementDetails.transferIn.length === 0 ? (
-                  <p>No transfer-in records found.</p>
+                {movementDetails.transferIn.length ===
+                0 ? (
+                  <p>
+                    No transfer-in records found.
+                  </p>
                 ) : (
                   <div className="movement-list">
-                    {movementDetails.transferIn.map((item) => (
-                      <div
-                        className="movement-item"
-                        key={`transfer-in-${item.id}`}
-                      >
-                        <strong>
-                          {item.quantity} units
-                        </strong>
+                    {movementDetails.transferIn.map(
+                      (item) => (
+                        <div
+                          className="movement-item"
+                          key={`transfer-in-${item.id}`}
+                        >
+                          <strong>
+                            {item.quantity} units
+                          </strong>
 
-                        <span>
-                          {item.equipmentType}
-                        </span>
+                          <span>
+                            {item.equipmentType}
+                          </span>
 
-                        <span>
-                          {item.fromBase} → {item.toBase}
-                        </span>
+                          <span>
+                            {item.fromBase} →{" "}
+                            {item.toBase}
+                          </span>
 
-                        <span>
-                          {new Date(
-                            item.transferDate
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
+                          <span>
+                            {new Date(
+                              item.transferDate
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Transfer Out */}
+              {/* =========================
+                  Transfer Out
+              ========================= */}
               <div className="movement-section">
                 <h3>
-                  Transfer Out: {dashboard.transferOut}
+                  Transfer Out:{" "}
+                  {dashboard.transferOut}
                 </h3>
 
-                {movementDetails.transferOut.length === 0 ? (
-                  <p>No transfer-out records found.</p>
+                {movementDetails.transferOut.length ===
+                0 ? (
+                  <p>
+                    No transfer-out records found.
+                  </p>
                 ) : (
                   <div className="movement-list">
-                    {movementDetails.transferOut.map((item) => (
-                      <div
-                        className="movement-item"
-                        key={`transfer-out-${item.id}`}
-                      >
-                        <strong>
-                          {item.quantity} units
-                        </strong>
+                    {movementDetails.transferOut.map(
+                      (item) => (
+                        <div
+                          className="movement-item"
+                          key={`transfer-out-${item.id}`}
+                        >
+                          <strong>
+                            {item.quantity} units
+                          </strong>
 
-                        <span>
-                          {item.equipmentType}
-                        </span>
+                          <span>
+                            {item.equipmentType}
+                          </span>
 
-                        <span>
-                          {item.fromBase} → {item.toBase}
-                        </span>
+                          <span>
+                            {item.fromBase} →{" "}
+                            {item.toBase}
+                          </span>
 
-                        <span>
-                          {new Date(
-                            item.transferDate
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
+                          <span>
+                            {new Date(
+                              item.transferDate
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
               </div>
