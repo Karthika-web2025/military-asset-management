@@ -2,7 +2,9 @@
 
 ## Project Overview
 
-A full-stack Military Asset Management System for managing military assets, purchases, transfers, assignments, expenditures, and dashboard-based asset tracking.
+A full-stack Military Asset Management System designed to manage and track military assets across different bases.
+
+The system provides functionality for monitoring asset balances, recording purchases, transferring assets between bases, assigning assets to personnel, and recording asset expenditures.
 
 ## Technology Stack
 
@@ -24,14 +26,31 @@ A full-stack Military Asset Management System for managing military assets, purc
 
 ## Project Structure
 
-- `client/` - React frontend
-- `server/` - Node.js/Express backend
-- `server/prisma/` - Prisma schema and database migrations
-- `database/` - Database dump, if provided
-
-## Frontend Setup
-
-```bash
-cd client
-npm install
-npm run dev
+```text
+military-asset-management/
+│
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   └── index.css
+│   ├── package.json
+│   └── ...
+│
+├── server/
+│   ├── src/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── ...
+│
+├── database/
+│   └── ...
+│
+├── README.md
+└── .gitignore
