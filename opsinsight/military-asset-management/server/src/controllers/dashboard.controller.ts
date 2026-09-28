@@ -1,15 +1,35 @@
-
 import { Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 
 export const getDashboard = async (req: Request, res: Response) => {
   try {
-    const { baseId, equipmentTypeId } = req.query;
+    const { baseId, equipmentTypeId, dateFrom, dateTo } = req.query;
 
-    const baseFilter = baseId ? Number(baseId) : undefined;
-    const equipmentFilter = equipmentTypeId
-      ? Number(equipmentTypeId)
-      : undefined;
+    const baseFilter =
+      typeof baseId === "string" ? Number(baseId) : undefined;
+
+    const equipmentFilter =
+      typeof equipmentTypeId === "string"
+        ? Number(equipmentTypeId)
+        : undefined;
+
+    const startDate =
+      typeof dateFrom === "string" && dateFrom
+        ? new Date(`${dateFrom}T00:00:00`)
+        : undefined;
+
+    const endDate =
+      typeof dateTo === "string" && dateTo
+        ? new Date(`${dateTo}T23:59:59.999`)
+        : undefined;
+
+    const dateFilter =
+      startDate || endDate
+        ? {
+            ...(startDate ? { gte: startDate } : {}),
+            ...(endDate ? { lte: endDate } : {}),
+          }
+        : undefined;
 
     // -----------------------------
     // Purchases
@@ -20,6 +40,14 @@ export const getDashboard = async (req: Request, res: Response) => {
         ...(equipmentFilter
           ? { equipmentTypeId: equipmentFilter }
           : {}),
+        ...(dateFilter ? { purchaseDate: dateFilter } : {}),
+      },
+      include: {
+        base: true,
+        equipmentType: true,
+      },
+      orderBy: {
+        purchaseDate: "desc",
       },
     });
 
@@ -41,6 +69,20 @@ export const getDashboard = async (req: Request, res: Response) => {
               },
             }
           : {}),
+
+        ...(dateFilter ? { transferDate: dateFilter } : {}),
+      },
+      include: {
+        asset: {
+          include: {
+            equipmentType: true,
+          },
+        },
+        fromBase: true,
+        toBase: true,
+      },
+      orderBy: {
+        transferDate: "desc",
       },
     });
 
@@ -62,6 +104,20 @@ export const getDashboard = async (req: Request, res: Response) => {
               },
             }
           : {}),
+
+        ...(dateFilter ? { transferDate: dateFilter } : {}),
+      },
+      include: {
+        asset: {
+          include: {
+            equipmentType: true,
+          },
+        },
+        fromBase: true,
+        toBase: true,
+      },
+      orderBy: {
+        transferDate: "desc",
       },
     });
 
@@ -85,6 +141,12 @@ export const getDashboard = async (req: Request, res: Response) => {
               },
             }
           : {}),
+
+        ...(dateFilter
+          ? {
+              assignedAt: dateFilter,
+            }
+          : {}),
       },
     });
 
@@ -106,6 +168,12 @@ export const getDashboard = async (req: Request, res: Response) => {
                     }
                   : {}),
               },
+            }
+          : {}),
+
+        ...(dateFilter
+          ? {
+              expendedAt: dateFilter,
             }
           : {}),
       },
@@ -177,6 +245,7 @@ export const getDashboard = async (req: Request, res: Response) => {
 
     // -----------------------------
     // Opening Balance
+    //
     // Closing = Opening + Net Movement - Expenditure
     //
     // Therefore:
@@ -192,15 +261,55 @@ export const getDashboard = async (req: Request, res: Response) => {
     // -----------------------------
     return res.json({
       success: true,
+
       data: {
         openingBalance,
+
         purchases: totalPurchases,
+
         transferIn: totalTransferIn,
+
         transferOut: totalTransferOut,
+
         netMovement,
+
         assigned: totalAssigned,
+
         expended: totalExpended,
+
         closingBalance,
+
+        // -----------------------------
+        // Net Movement Details
+        // Used by Dashboard popup
+        // -----------------------------
+        netMovementDetails: {
+          purchases: purchases.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            purchaseDate: item.purchaseDate,
+            base: item.base.name,
+            equipmentType: item.equipmentType.name,
+          })),
+
+          transferIn: transfersIn.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            transferDate: item.transferDate,
+            equipmentType: item.asset.equipmentType.name,
+            fromBase: item.fromBase.name,
+            toBase: item.toBase.name,
+          })),
+
+          transferOut: transfersOut.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            transferDate: item.transferDate,
+            equipmentType: item.asset.equipmentType.name,
+            fromBase: item.fromBase.name,
+            toBase: item.toBase.name,
+          })),
+        },
       },
     });
   } catch (error) {
@@ -212,4 +321,3 @@ export const getDashboard = async (req: Request, res: Response) => {
     });
   }
 };
-
